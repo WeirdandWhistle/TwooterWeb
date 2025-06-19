@@ -14,7 +14,7 @@ import lib.Util;
 
 public class SlackBot implements HttpHandler {
 
-	private final String token = "xoxb-2210535565-8931269329269-5aP9yZYck0nSqQe0V239TtqA";
+	private final String token = "xoxb-salck-bot-token-chaheg slack token";
 
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
