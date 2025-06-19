@@ -1,0 +1,90 @@
+body{
+	background:black;
+	color: #fff;
+}
+
+.main-form{
+	position:absolute;
+	width: 50%;
+	top:0;
+	left:50%;
+	translate: -50% 5%;
+	display: grid;
+	border: purple 1px solid;
+	padding: 15px;
+	border-radius: 10px;
+	background: #081e75;
+	height:90%;
+	
+	justify-items:center;
+	
+	grid-template-rows:15% 25% 25% 5%;
+	grid-template-columns: 100%;
+	
+}
+.textfield{
+	width:150px;
+	height:20px;
+	color:#fff;
+	border:none;
+	border-bottom: 3px #fff solid;
+	outline:red;
+	background:none;
+	transition:0.3s;
+}
+.textfield::placeholder{
+	opacity:0;
+}
+.textfield:placeholder-shown ~ .textLabel{
+	top:0%;
+	background-image:linear-gradient(to right,#fff, #fff);
+}
+.textfield:focus ~ .textLabel{
+	top:-20px;
+	background-image: linear-gradient(to right,red, yellow);
+}
+.textfield:focus{
+	border-image: linear-gradient(to right,red, yellow);
+	border-image-slice:1;
+}
+.textLabel{
+	
+	color:transparent;
+	position:absolute;
+	top:-20px;
+	left:0%;
+	z-index:1;
+	font-size:20px;
+	transition:0.3s;
+	background-image: linear-gradient(to right,#fff, #fff);
+	background-clip:text;
+	text-fill-color:trasparent;
+}
+
+.cool-button{
+	background:black;
+	color:white;
+	border-radius:50px;
+	width:200px;
+	border:none;
+	cursor:pointer;
+}
+
+.cool-button[value="loading"]{
+	animation: loading 2s ease-in-out 50;
+	color:green;
+}
+.cool-button[value="done"]{
+	animation: none;
+	color:green;
+	border: 1px green solid;
+}
+
+@keyframes loading{
+	0%{
+		transform: rotateZ(0);
+	}
+	100%{
+		transform: rotateZ(360deg);
+	}
+}

@@ -1,0 +1,1 @@
+{userID / sha-256 of name} {rando 100 digit session} {name}

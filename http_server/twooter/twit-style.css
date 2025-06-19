@@ -1,0 +1,303 @@
+body{
+	background-color:black;
+	color:white;
+}
+.menu-bar-but{
+	position:absolute;
+	left:0px;
+	top:0px;
+	color: #5f5f5f;
+	width:40px;
+	height:40px;
+	border-bottom: #5f5f5f 1px solid;
+	border-right: #5f5f5f 1px solid;
+	cursor: pointer;
+}
+.menu-bar-but:hover{
+	color:#afafaf;
+}
+.menu-bar-but span{
+	position:absolute;
+	left:50%;
+	top:50%;
+	translate: -50% -50%;
+}
+.menu-bar{
+	position:fixed;
+	width:0;
+	height:100%;
+	background:#000;
+	top:0;
+	left:-10px;
+	z-index:5;
+	transition:ease-in-out 0.5s;
+	overflow-x:hidden;
+	border-right:#818181 solid;
+	cursor:pointer;
+}
+.menu-bar a{
+	padding: 8px 8px 8px 32px;
+	text-decoration: none;
+	font-size: 25px;
+	color: #818181;
+	display: block;
+	transition: 0.3s;
+}
+.menu-bar a:hover{
+	color:#afafaf;
+}
+
+.container{
+	border:purple 1px solid;
+	display:grid;
+	width:50%;
+	height: max-content;
+	position:absolute;
+	top:30px;
+	left:50%;
+	translate: -50% 0;
+	gap:10px;
+	padding:10px;
+	overflow-wrap: break-word;
+}
+.twoot{
+	color: #fff;
+	background:#000;
+	border:#818181 1px solid;
+	border-radius: 10px;
+	overflow:visible;
+	padding:5px;
+	height:auto;
+}
+.twoot:hover {
+	background:#515151;
+}
+.check-but{
+	position:relative;
+	color: #fff;
+	padding-left:10px;
+	width:25px;
+	height:25px;
+	display:grid;
+	text-align:center;
+	color:red;
+	background:transparent;
+	border:none;
+	cursor:pointer;
+}
+
+.like{
+	position:relative;
+	width:1fr;
+	display:grid;
+	height:30px;
+	grid-template-rows: 1;
+	grid-template-columns: 30px 1fr;
+	align-items:center;
+}
+
+.like input{
+	width:0;
+	height:0;
+	opacity:0;
+}
+
+.like input:checked + .decor[target="like"]{
+	color:green;
+	animation: spin 1s ease-in-out;
+}
+.like input:checked + .decor[target="dislike"]{
+	color:red;
+	animation: spin 1s ease-in-out;
+}
+.like input:checked + .decor[target="comment"]{
+	color:brown;
+	animation: spin 1s ease-in-out;
+}
+
+.decor{
+	
+	position:absolute;
+	width:10px;
+	height:10px;
+	background:none;
+	font-size:40px;
+	top:0px;
+	left:0px;
+	transform-origin: 15px 25px;
+	
+}
+
+.decor[target="like"]{
+	translate: 0px -10px;
+}
+.decor[target="dislike"]{
+	translate: 0px -15px;
+}
+.decor[target="comment"]{
+	translate: -15px -15px;
+	transform-origin: 25px 29px;
+}
+
+
+@keyframes spin{
+	0%{
+		translate: rotate(0deg);
+	}
+	100%{
+		transform: rotate(360deg);
+	}
+}
+
+.interactions{
+	display: grid;
+	grid-template-columns:repeat(2, minmax(auto,max-content)) 0.99fr minmax(auto,max-content);
+	grid-template-rows: 1;
+	gap:5px;
+}
+
+.combo{
+	position:relative;
+	display:grid;
+	height:30px;
+	grid-template-rows: 30px;
+	grid-template-columns: 30px 1fr;
+	align-items:center;
+}
+
+.butDecor{
+	position:absolute;
+	top:0;
+	left:0;
+	width:30px;
+	height:30px;
+	background:none;
+	color:red;
+	font-size: 40px;
+	cursor: pointer;
+	border:none;
+	z-index:100;
+}
+
+.butDecor[name="comment"]{
+	width:40px;
+	translate: -10px 0px;
+}
+
+.butDecor[value="false"] ~ .butLabel{
+	color: white;
+	animation:none;
+}
+.butDecor[value="true"] ~ .butLabel{
+	animation: spin 0.5s ease-in-out;
+}
+
+.butLabel{
+	color:green;
+	font-size:40px;
+}
+.butLabel[target="like"]{
+	translate: 0px 0px;
+}
+.butLabel[target="dislike"]{
+	translate: 0px -5px;
+	color:red;
+}
+.butLabel[target="comment"]{
+	translate: -10px -5px;
+	color:brown;
+}
+
+.who{
+	border-right: #878e99 1px solid;
+	border-bottom: #878e99 1px solid;
+	width: max-content;
+	height:min-content;
+	padding: none;
+	padding-right: 3px;
+	display:inline-grid;
+	justify-content:center;
+	grid-template-rows: 1;
+	grid-template-columns: repeat(2,minmax(auto,max-content)); 
+	gap:5px;
+}
+.name{
+	color: #878e99;
+	font-size: 16px;
+}
+
+.pfp{
+	width:15px;
+	height:15px;
+	border-radius: 50%;
+}
+
+.comment-container{
+	/*border: green 1px solid;*/
+	display:flex;
+	position:relative;
+	width: 1fr;
+	padding:5px;
+	flex-wrap: wrap;
+	gap:5px;
+	align-items:flex-start;
+	justify-content:flex-start;
+	box-sizing: border-box;
+}
+
+.comment{
+	display:flex;
+	
+	/*border: 1px #f00 solid;*/
+	width:100%;
+	flex-grow:1;
+	flex-wrap:wrap;
+	height:max-content;
+	margin-left:25px;
+}
+.comment span{
+	padding: 5px;
+	border: #fff 1px solid;
+	border-radius: 10px;
+	width:100%;
+}
+
+.heart{
+	font-size:20px;
+	width:30px;
+	height:30px;
+	background:none;
+	color:red;
+	border: none;
+	border-radius:50%;
+	cursor:pointer;
+	
+}
+
+.heart[value="true"]{
+	font-size:22px;
+}
+
+.reply{
+	color:#469cf2;
+	font-size:20px;
+	cursor:pointer;
+	border-radius:50%;
+	border:none;
+	background:none;
+	
+}
+.other{
+	color:#858585;
+	font-size:20px;
+	cursor:pointer;
+	border-radius:50%;
+	border:none;
+	background:none;
+	width:20px;
+	height:20px;
+	
+}
+
+
+

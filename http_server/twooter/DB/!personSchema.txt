@@ -1,0 +1,1 @@
+{userID / sha-256 of name} {name}

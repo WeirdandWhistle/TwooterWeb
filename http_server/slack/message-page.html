@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang ="en">
+	<head>
+		<link rel="stylesheet" href="message-page-css.css" type="text/css">
+		<script src="slack.js"></script>
+	</head>
+	
+	<body style="background-color:black; color: white;">
+		<div class="box-container">
+			<div class="box" target="info">
+				<h1> How does this work?</h1>
+				<ul>
+					<li>Enter your text.</li>
+					<li>Select if its mark down (mrdwn)</li>
+					<li>Send!</li>
+				</ul>
+			</div>
+			<div class="box">
+			<br>
+				<input class="textfield" placeholder="message" id="messageData">
+				<label class="textfieldPlaceholder">Message</label>
+				<button class="sendBtn" onclick="sendData()"> send <span>&#10003;</span></button>
+			</div>
+			<div class="box">
+				<input type="checkbox" class="snap" onClick="mainPage()">
+			</div>
+		</div>
+	</body>
+</html>

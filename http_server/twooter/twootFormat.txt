@@ -1,0 +1,25 @@
+{
+	"ID":"{unquie ID base-64 sha-256 (sha-256 of message)+timestamp+userID}",
+	"timestamp":"{timestamp}",
+	"message": "{encoded message}",
+	"title": "{encoded title}",
+	"name": "{author name}",
+	"userID": "{author userID/sha-256 of name}",
+	"likeCount":"number of likes",
+	"like": ["{all people who liked}"],
+	"dislikeCount":"number of dislikes"
+	"dislike": ["{all people who disliked}"],
+	"comments": [
+	{
+		"message": "{encoded message}",
+		"name": "{author}",
+		"userID":"{sha-256 pf mame}",
+		"likeCount":"number of likes",
+		"like":["{people who liked}"],
+		"reply": ["{comment object this}"]
+	},
+        {
+		"comment": "object see above}"
+        }
+    ]
+}
