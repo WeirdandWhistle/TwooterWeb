@@ -34,7 +34,6 @@
 	syntax: "<angle>";
 	initial-value: 0deg;
 	inherits: false;
-
 }
 
 .card::after, .card::before {

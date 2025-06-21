@@ -16,7 +16,6 @@ function post(){
 	
 	let message = document.getElementById("content").innerHTML;
 	let title = titleIn.value;
-	
 	fetch(origin+"/api/twooter/twoot",{
 		method:"POST",
 		body: JSON.stringify({
@@ -24,6 +23,29 @@ function post(){
 			title
 		})
 	}).then(rep=>{
-		console.log(rep);
+		return rep.json();
+	}).then(rep=>{
+		console.log("getting there",rep);
+		
+		fetch(Domain+"/api/twooter/get-twoot",{
+			method:"GET",
+			headers:{
+				"ID":rep.ID
+			}
+		}).then(rep=>{
+			return rep.json();
+		}).then(json=>{
+			console.log("get request",json);
+		});
 	});
+	
+	
+}
+function openNav(){
+	document.getElementById("menu-bar").style.width = "min(15%,300px)";
+	document.getElementById("menu-bar").style.left = "0";
+}
+function closeNav(){
+	document.getElementById("menu-bar").style.width = "0";
+	document.getElementById("menu-bar").style.left = "-10px";
 }

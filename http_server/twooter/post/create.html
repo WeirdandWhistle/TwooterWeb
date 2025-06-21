@@ -6,12 +6,20 @@
 	</head>
 	
 	<body>
+		
+		<div class="menu-bar-but" onclick="openNav()"><span style="font-size:30px;">&#9776;</span></div>
+			<div class="menu-bar" id="menu-bar">
+				<a style="font-size:50px;" onclick="closeNav()">&times;</a>
+				<a href="/twooter">Home</a>
+				<a href="/twooter/post/create.html">Post</a>
+				<a href="#">Another thing</a>
+				<a href="/">Start Page</a>
+			</div>
 	
 	<div class="main">
 		<button id="post-but"class="post-button" onclick="post();">post</button>
 		<input class="title-input" placeholder="Title" id="title">
 		<div id="content"contenteditable="true" class="post-frame"></div>
-		<div ><div>
 	</div>
 	
 	</body>

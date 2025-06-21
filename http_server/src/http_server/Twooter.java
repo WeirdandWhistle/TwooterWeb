@@ -1,14 +1,19 @@
 package http_server;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Scanner;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -47,7 +52,7 @@ public class Twooter implements HttpHandler {
 
 		try {
 
-			// System.out.println("uri:" + exchange.getRequestURI().toString());
+			System.out.println("twooter uri:" + exchange.getRequestURI().toString());
 
 			String url = exchange.getRequestURI().toString().replaceFirst("/", "");
 
@@ -79,10 +84,13 @@ public class Twooter implements HttpHandler {
 				return;
 			}
 
-			if (url.equals("twooter/")) {
+			if (url.split("/")[0].equals("twooter") && url.split("/").length == 1) {
 
-				System.out.println(exchange.getRequestHeaders().getFirst("Cookie"));
+				// System.out.println(exchange.getRequestHeaders().getFirst("Cookie"));
 
+				new ServeFile("twooter/twit.html").handle(exchange);
+				return;
+			} else if (url.equals("twooter/")) {
 				new ServeFile("twooter/twit.html").handle(exchange);
 				return;
 			}
@@ -100,19 +108,29 @@ public class Twooter implements HttpHandler {
 
 		System.out.println("twooter api request:" + exchange.getRequestURI().toString());
 
-		switch (exchange.getRequestURI().toString().split("/")[3]) {
+		try {
 
-			case "login" :
-				LOGIN(exchange);
-				return;
-			case "twoot" :
-				try {
+			switch (exchange.getRequestURI().getPath().split("/")[3]) {
+
+				case "login" :
+					LOGIN(exchange);
+					return;
+				case "twoot" :
 					TWOOT(exchange);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				return;
+					return;
+				case "get-twoot" :
+					getTWOOT(exchange);
+					return;
+				case "line-twoot" :
+					lineTWOOT(exchange);
+					return;
+				case "twoot-length" :
+					getTWOOTLength(exchange);
+					return;
 
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -120,8 +138,7 @@ public class Twooter implements HttpHandler {
 
 		System.out.println("started login");
 
-		if (!e.getRequestMethod().equals("PUT")) {
-			System.out.println("no a 'get' request'");
+		if (Util.enforceMethod("PUT", e)) {
 			return;
 		}
 
@@ -229,19 +246,8 @@ public class Twooter implements HttpHandler {
 	}
 	public void TWOOT(HttpExchange e) {
 		System.out.println("started twoot");
-		if (!e.getRequestMethod().equals("POST")) {
-			JsonObject json = new JsonObject();
-			json.addProperty("error", "wrong method");
-
-			try {
-				e.getResponseHeaders().add("content-type", "text/json");
-				e.sendResponseHeaders(401, json.getAsString().getBytes().length);
-				e.getResponseBody().write(json.getAsString().getBytes());
-				e.getResponseBody().close();
-				return;
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
+		if (Util.enforceMethod("POST", e)) {
+			return;
 		}
 
 		String session = enforceSession(e);
@@ -256,8 +262,8 @@ public class Twooter implements HttpHandler {
 		String name = this.getNameFromSession(session);
 		String userID = this.hexSHA256(name);
 
-		String message = json.get("message").toString();
-		String title = json.get("title").toString();
+		String message = json.get("message").getAsString();
+		String title = json.get("title").getAsString();
 
 		long timestamp = System.currentTimeMillis();
 		String ID = Util.Base64(Util.SHA256((hexSHA256(message) + timestamp + userID)));
@@ -297,7 +303,9 @@ public class Twooter implements HttpHandler {
 
 		}
 		try {
-			e.sendResponseHeaders(200, 0);
+			byte[] repo = ("{ \"ID\" : \"" + ID + "\"}").getBytes();
+			e.sendResponseHeaders(200, repo.length);
+			e.getResponseBody().write(repo);
 			e.getResponseBody().close();
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -306,19 +314,144 @@ public class Twooter implements HttpHandler {
 	}
 	public void getTWOOT(HttpExchange e) {
 
+		if (Util.enforceMethod("GET", e)) {
+			return;
+		}
+
 		String session = enforceSession(e);
 
 		if (session == null) {
 			return;
 		}
 
-		String ID = JsonParser.parseString(Util.parseBody(e.getRequestBody())).getAsJsonObject()
-				.get("ID").getAsString();
+		String ID = e.getRequestHeaders().getFirst("ID");
 
 		JsonObject json = getTwootByID(ID);
 
 		if (json == null) {
+			System.out.println("no working");
 			Util.HttpError("couldnt find twoot by ID", 400, e);
+			return;
+		}
+
+		String repo = new Gson().toJson(json);
+
+		try {
+			e.getResponseHeaders().add("content-type", "text/json");
+			e.sendResponseHeaders(200, repo.getBytes().length);
+			e.getResponseBody().write(repo.getBytes());
+			e.getResponseBody().close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+	}
+	/**
+	 * javadoc for lineTWOOt just a good way to get sorta random twoots <br>
+	 * in url query index
+	 * 
+	 * <br>
+	 * json out 'json of the twoot at "line" '
+	 * 
+	 * <br>
+	 * 
+	 * @apiNote indeing starts at 0
+	 * @returns json using a error tag if line doesn't exsit
+	 */
+	public void lineTWOOT(HttpExchange e) {
+		String session = enforceSession(e);
+
+		if (session == null) {
+			return;
+		}
+
+		HashMap<String, String> query = Util.parseQuery(e.getRequestURI().getQuery());
+
+		int lineNum = Integer.valueOf(query.get("index"));
+		// System.out.println("lineNum:" + lineNum);
+		// boolean ok = true;
+		byte[] repo = null;
+		synchronized (twootDB1Lock) {
+
+			try (BufferedReader read = new BufferedReader(new FileReader(twootDB1Path))) {
+
+				for (int i = 0; i < lineNum; i++) {
+					if (read.readLine() == null) {
+						// System.out.println("really doesn't exist");
+						Util.HttpError("line does not exsit", 400, e);
+						return;
+					}
+
+				}
+
+				String line = read.readLine();
+
+				if (line == null) {
+					// System.out.println("hmmmmmm");
+					Util.HttpError("line does not exsit", 400, e);
+					return;
+				}
+				System.out.println("line:" + line);
+				repo = line.getBytes();
+
+			} catch (IOException e1) {
+				Util.HttpError("IOException", 500, e);
+				e1.printStackTrace();
+				return;
+			}
+		}
+
+		try {
+			e.getResponseHeaders().add("content-type", "text/json");
+			e.sendResponseHeaders(200, repo.length);
+			e.getResponseBody().write(repo);
+			e.getResponseBody().close();
+		} catch (IOException e2) {
+			Util.HttpError("IOException e2", 500, e);
+			e2.printStackTrace();
+		}
+
+	}
+	public void getTWOOTLength(HttpExchange e) {
+		// System.out.println("startted getTWOOTLength");
+		String session = enforceSession(e);
+
+		if (session == null) {
+			Util.HttpError("no session", 401, e);
+			return;
+		}
+
+		if (Util.enforceMethod("GET", e)) {
+			return;
+		}
+
+		// System.out.println("made it passed starting");
+		int lines = 0;
+		synchronized (twootDB1Lock) {
+			try (BufferedReader read = new BufferedReader(new FileReader(twootDB1Path));) {
+				while (read.readLine() != null) {
+					lines++;
+				}
+			} catch (FileNotFoundException e1) {
+				Util.HttpError("FileNotFoundException", 500, e);
+				e1.printStackTrace();
+			} catch (IOException e2) {
+				Util.HttpError("IOException", 500, e);
+				e2.printStackTrace();
+			}
+		}
+		JsonObject json = new JsonObject();
+		json.addProperty("length", lines);
+		byte[] repo = new Gson().toJson(json).getBytes();
+
+		try {
+			e.getResponseHeaders().add("content-type", "text/json");
+			e.sendResponseHeaders(lines, repo.length);
+			e.getResponseBody().write(repo);
+			e.getResponseBody().close();
+		} catch (IOException e1) {
+			Util.HttpError("IOException", 500, e);
+			e1.printStackTrace();
 		}
 
 	}
@@ -433,15 +566,18 @@ public class Twooter implements HttpHandler {
 
 	public JsonObject getTwootByID(String ID) {
 
-		String db = getSessionDB();
+		String db = getTweetDB1();
 
 		String line = "";
 		Scanner scan = Util.getScan(db);
 
 		JsonObject json = null;
 		while ((line = Util.nextScan(scan)) != null) {
+
 			json = JsonParser.parseString(line).getAsJsonObject();
+			// System.out.println("proof:" + json.getAsString());
 			if (json.get("ID").getAsString().equals(ID)) {
+				System.out.println("found somehting!");
 				return json;
 			}
 		}

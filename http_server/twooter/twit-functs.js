@@ -1,3 +1,4 @@
+const Domain = window.location.origin;
 function openNav(){
 	document.getElementById("menu-bar").style.width = "min(15%,300px)";
 	document.getElementById("menu-bar").style.left = "0";
@@ -25,7 +26,7 @@ function toggleHeart(node){
 	}
 }
 function reply(node){
-	
+	console.log("should add this system soon");
 }
 let twoot1 = document.getElementById("twoot=1");
 
@@ -74,6 +75,7 @@ function runInteraction(but){
 }
 function openComment(twoot,but){
 	console.log("opening comments for:",twoot);
+	/* 
 	twoot.innerHTML += `
 	<div name="comments">
 		<hr> 
@@ -117,6 +119,7 @@ function openComment(twoot,but){
 			
 		</div>
 	</div>`;
+	*/
 	comments = twoot.children.comments;
 	
 }
@@ -124,4 +127,78 @@ function closeComment(twoot){
 	console.log("close comments",twoot);
 	twoot.removeChild(twoot.children.comments);
 }
+function addTwoot(json){
+	let twoot = `
+	<div id="${json.ID}" class="twoot">
+		<div class="who">
+			<img class="pfp" src="${Domain+"/img/pfp/"+json.name+".png"}">
+			<span class="name">${json.name}</span> 
+		</div>
+		
+		<label style="font-weight:bold; font-size:25px; word-wrap: break-word; word-break: break-word;">
+		${json.title}
+		</label>
+		<br>
+		<span>
+			${json.message}
+		</span>
+		<hr>
+		<div class="interactions">
+						<label class="combo" name="like">
+							<button class="butDecor" name="like" onclick="runInteraction(this);" value="false"></button>
+							<label class="butLabel" target="like">&#x1F592;</label>
+							<span>5M</span>
+						</label>
+						<label class="combo" name="dislike">
+							<button class="butDecor" name="dislike" onclick="runInteraction(this);" value="false"></button>
+							<label class="butLabel" target="dislike">&#x1F593</label>
+							<span>3k</span>
+						</label>
+						<label></label>
+						<label class="combo" name="comment">
+							<button class="butDecor" name="comment" onclick="runInteraction(this);" value="false"></button>
+							<label class="butLabel" target="comment">&#x1F5E8;</label>
+							<span>comment</span>
+						</label>
+					</div>
+	</div>
+	
+	`;
+	
+	let container =  document.getElementById("container");
+	
+	container.innerHTML += twoot;
+}
+
+fetch(Domain+"/api/twooter/twoot-length",{
+	method:"GET"
+}).then(rep=>{
+	return rep.json();
+}).then(rep=>{
+	console.log(rep);
+
+	if(rep.length >= 1){
+		for(let i = 0; i<rep.length;i++){
+
+
+			let lineTwoot = new URL(Domain);
+
+			lineTwoot.pathname = "/api/twooter/line-twoot";
+
+			lineTwoot.search = 'index='+i;
+		
+		fetch(lineTwoot,{
+			method:"GET"
+			
+		}).then(out=>{
+			return out.json();
+		}).then(json=>{
+			console.log('json',json);
+			addTwoot(json);
+		});
+		}
+	}
+});
+
+
 

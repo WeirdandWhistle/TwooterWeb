@@ -38,7 +38,7 @@ public class Main {
 			});
 			server.createContext("/api/", api);
 			server.createContext("/slack/", new Slack());
-			server.createContext("/twooter/", new Twooter());
+			server.createContext("/twooter", new Twooter());
 			server.createContext("/", new DefaultHandler());
 
 			server.start();
@@ -103,6 +103,15 @@ public class Main {
 				System.out.println("default");
 				new ServeFile("index.html").handle(exchange);
 
+				return;
+			}
+
+			if (exchange.getRequestURI().toString().split("/").length > 2
+					&& exchange.getRequestURI().toString().split("/")[2].equals("DB")) {
+				String repo = "ERROR 401 not authorized\nfrom server";
+				exchange.sendResponseHeaders(401, repo.getBytes().length);
+				exchange.getResponseBody().write(repo.getBytes());
+				exchange.getResponseBody().close();
 				return;
 			}
 

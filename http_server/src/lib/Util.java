@@ -14,6 +14,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
@@ -32,7 +33,6 @@ public abstract class Util implements FileRunnables {
 			String requestData = textBuilder.toString();
 			return requestData;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -49,10 +49,8 @@ public abstract class Util implements FileRunnables {
 
 			return repo;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -101,15 +99,17 @@ public abstract class Util implements FileRunnables {
 		return null;
 
 	}
-	public static void redirect(HttpExchange exchange, String url) {
+	public static void redirect(HttpExchange exchange, String url, int code) {
 		try {
 			exchange.getResponseHeaders().add("location", url);
-			exchange.sendResponseHeaders(302, 0);
+			exchange.sendResponseHeaders(code, 0);
 			exchange.getResponseBody().close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	public static void redirect(HttpExchange exchange, String url) {
+		redirect(exchange, url, 307);
 	}
 	public static BigInteger random(int digits) {
 		String num = "";
@@ -198,17 +198,43 @@ public abstract class Util implements FileRunnables {
 	}
 	public static void HttpError(String error, int errorCode, HttpExchange e) {
 
-		String repo = "{ \"error\"+\" :" + error + " \" }";
-
 		try {
+			String repo = "{ \"error\" : \"" + error + " \" }";
 			e.sendResponseHeaders(errorCode, repo.getBytes().length);
 			e.getResponseBody().write(repo.getBytes());
 			e.getResponseBody().close();
 			return;
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
+			String repoString = "{\"error\":\"IOException\", \"info\":" + e1.getMessage() + "}";
+			try {
+				e.sendResponseHeaders(500, repoString.getBytes().length);
+				e.getResponseBody().write(repoString.getBytes());
+				e.getResponseBody().close();
+			} catch (IOException e2) {
+				e2.printStackTrace();
+			}
 			e1.printStackTrace();
 		}
+	}
+
+	public static boolean enforceMethod(String method, HttpExchange e) {
+		if (e.getRequestMethod().equals(method)) {
+			return false;
+		}
+		HttpError("Wrong http method", 405, e);
+		return true;
+	}
+	public static HashMap<String, String> parseQuery(String query) {
+
+		String[] allQuery = query.split("&");
+		HashMap<String, String> map = new HashMap<>();
+
+		for (String pair : allQuery) {
+			String[] pear = pair.split("=");
+			map.put(pear[0], pear[1]);
+		}
+
+		return map;
 	}
 
 }
