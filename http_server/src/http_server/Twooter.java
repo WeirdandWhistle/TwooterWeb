@@ -3,15 +3,18 @@ package http_server;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -37,6 +40,11 @@ public class Twooter implements HttpHandler {
 	public Object personDBLock = new Object();
 	public Object twootDB1Lock = new Object();
 
+	public long lastSave = 0;
+	public final long timeBewteenSaves = 10 * 1000; // time in mills
+
+	public ConcurrentHashMap<String, Twoot> twootDB1Map = new ConcurrentHashMap<String, Twoot>();
+
 	public Twooter() {
 		try {
 			new File(sessionDBPath).createNewFile();
@@ -45,14 +53,23 @@ public class Twooter implements HttpHandler {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		this.loadTwootCache();
+		lastSave = System.currentTimeMillis();
 	}
 
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
+		if (System.currentTimeMillis() - this.lastSave >= this.timeBewteenSaves) {
+			saveTwootCache();
+		} else {
+			System.out.println(((System.currentTimeMillis() - this.lastSave) / 1000)
+					+ " seconds affter last save");
+		}
 
 		try {
 
-			System.out.println("twooter uri:" + exchange.getRequestURI().toString());
+			// System.out.println("twooter uri:" +
+			// exchange.getRequestURI().toString());
 
 			String url = exchange.getRequestURI().toString().replaceFirst("/", "");
 
@@ -153,7 +170,7 @@ public class Twooter implements HttpHandler {
 
 			name = name.toLowerCase();
 
-			String userID = hexSHA256(name);
+			String userID = Util.hex(Util.SHA256(name));
 
 			for (int i = 0; i < name.length(); i++) {
 				if (!Util.contains(acceptedChars, name.charAt(i))) {
@@ -168,11 +185,20 @@ public class Twooter implements HttpHandler {
 				}
 			}
 
-			String fileString = getPersonDB();
-			Scanner scan = Util.getScan(fileString);
-			BufferedWriter write;
 			synchronized (personDBLock) {
-				write = new BufferedWriter(new FileWriter(pdb));
+
+				BufferedReader read = new BufferedReader(new FileReader(pdb));
+				String line = null;
+				boolean found = false;
+				while ((line = read.readLine()) != null) {
+					if (line.substring(10, 53).equals(userID)) {
+						System.out.println("person auth needed!");
+						found = true;
+						break;
+					}
+				}
+				read.close();
+				FileWriter write = new FileWriter(pdb);
 
 				boolean foundPerson = false;
 				String line;
@@ -293,15 +319,8 @@ public class Twooter implements HttpHandler {
 
 		String JSON = new GsonBuilder().serializeNulls().create().toJson(twoot);
 
-		synchronized (twootDB1Lock) {
+		twootDB1Map.put(twoot.ID, twoot);
 
-			try (FileWriter write = new FileWriter(twootDB1Path, true)) {
-				write.write(JSON + "\n");
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-
-		}
 		try {
 			byte[] repo = ("{ \"ID\" : \"" + ID + "\"}").getBytes();
 			e.sendResponseHeaders(200, repo.length);
@@ -326,7 +345,7 @@ public class Twooter implements HttpHandler {
 
 		String ID = e.getRequestHeaders().getFirst("ID");
 
-		JsonObject json = getTwootByID(ID);
+		Twoot json = twootDB1Map.get(ID);
 
 		if (json == null) {
 			System.out.println("no working");
@@ -370,36 +389,20 @@ public class Twooter implements HttpHandler {
 		int lineNum = Integer.valueOf(query.get("index"));
 		// System.out.println("lineNum:" + lineNum);
 		// boolean ok = true;
-		byte[] repo = null;
-		synchronized (twootDB1Lock) {
 
-			try (BufferedReader read = new BufferedReader(new FileReader(twootDB1Path))) {
+		Set<Map.Entry<String, Twoot>> set = twootDB1Map.entrySet();
+		ArrayList<Map.Entry<String, Twoot>> arr = new ArrayList<>(set);
 
-				for (int i = 0; i < lineNum; i++) {
-					if (read.readLine() == null) {
-						// System.out.println("really doesn't exist");
-						Util.HttpError("line does not exsit", 400, e);
-						return;
-					}
-
-				}
-
-				String line = read.readLine();
-
-				if (line == null) {
-					// System.out.println("hmmmmmm");
-					Util.HttpError("line does not exsit", 400, e);
-					return;
-				}
-				System.out.println("line:" + line);
-				repo = line.getBytes();
-
-			} catch (IOException e1) {
-				Util.HttpError("IOException", 500, e);
-				e1.printStackTrace();
-				return;
-			}
+		if (set == null) {
+			System.out.println("um set error");
 		}
+
+		if (set.size() < lineNum) {
+			Util.HttpError("line does not exsit", 500, e);
+			return;
+		}
+
+		byte[] repo = new Gson().toJson(arr.get(lineNum).getValue()).getBytes();
 
 		try {
 			e.getResponseHeaders().add("content-type", "text/json");
@@ -426,32 +429,76 @@ public class Twooter implements HttpHandler {
 		}
 
 		// System.out.println("made it passed starting");
-		int lines = 0;
-		synchronized (twootDB1Lock) {
-			try (BufferedReader read = new BufferedReader(new FileReader(twootDB1Path));) {
-				while (read.readLine() != null) {
-					lines++;
-				}
-			} catch (FileNotFoundException e1) {
-				Util.HttpError("FileNotFoundException", 500, e);
-				e1.printStackTrace();
-			} catch (IOException e2) {
-				Util.HttpError("IOException", 500, e);
-				e2.printStackTrace();
-			}
+
+		Set<Map.Entry<String, Twoot>> set = twootDB1Map.entrySet();
+
+		if (set == null) {
+			Util.HttpError("set is null", 500, e);
+			return;
 		}
+
+		int lines = set.size();
+
 		JsonObject json = new JsonObject();
 		json.addProperty("length", lines);
 		byte[] repo = new Gson().toJson(json).getBytes();
 
 		try {
 			e.getResponseHeaders().add("content-type", "text/json");
-			e.sendResponseHeaders(lines, repo.length);
+			e.sendResponseHeaders(200, repo.length);
 			e.getResponseBody().write(repo);
 			e.getResponseBody().close();
 		} catch (IOException e1) {
 			Util.HttpError("IOException", 500, e);
 			e1.printStackTrace();
+		}
+
+	}
+	public void likeTwoot(HttpExchange e) {
+		if (Util.enforceMethod("PUT", e)) {
+			return;
+		}
+
+		String session = enforceSession(e);
+		if (session == null) {
+			return;
+		}
+		String ID = JsonParser.parseString(Util.parseBody(e.getRequestBody())).getAsJsonObject()
+				.get("ID").getAsString();
+
+		synchronized (twootDB1Lock) {
+			String twoots = Util.readFile(new File(twootDB1Path));
+			Scanner scan = Util.getScan(twoots);
+			int importLine = -1;
+			int lines = -1;
+			boolean rightLine = false;
+			String same = "";
+			try (BufferedWriter write = new BufferedWriter(new FileWriter(twootDB1Path))) {
+				String line = null;
+				while ((line = Util.nextScan(scan)) != null) {
+					lines++;
+					String subID = line.substring(7, 50);
+					System.out.println("subID" + subID);
+					if (subID.equals(ID)) {
+						JsonObject json = JsonParser.parseString(line).getAsJsonObject();
+
+						if (json.get("ID").getAsString().equals(ID)) {
+							importLine = lines;
+							rightLine = true;;
+						}
+
+					} else if (!rightLine) {
+						same += line + "\n";
+					}
+					rightLine = false;
+
+				}
+
+			} catch (IOException e2) {
+				Util.HttpError("IOException", 500, e);
+				e2.printStackTrace();
+				return;
+			}
 		}
 
 	}
@@ -563,26 +610,46 @@ public class Twooter implements HttpHandler {
 		}
 		return session;
 	}
-
-	public JsonObject getTwootByID(String ID) {
-
-		String db = getTweetDB1();
-
-		String line = "";
-		Scanner scan = Util.getScan(db);
-
-		JsonObject json = null;
-		while ((line = Util.nextScan(scan)) != null) {
-
-			json = JsonParser.parseString(line).getAsJsonObject();
-			// System.out.println("proof:" + json.getAsString());
-			if (json.get("ID").getAsString().equals(ID)) {
-				System.out.println("found somehting!");
-				return json;
+	public void loadTwootCache() {
+		System.out.println("loading twoot cache...");
+		synchronized (twootDB1Lock) {
+			try (BufferedReader read = new BufferedReader(new FileReader(twootDB1Path))) {
+				String line = null;
+				twootDB1Map.clear();
+				while ((line = read.readLine()) != null) {
+					Twoot twoot = new Gson().fromJson(line, Twoot.class);
+					twootDB1Map.put(line.substring(7, 50), twoot);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
+		System.out.println("finshed loading twoot cache");
+	}
+	public synchronized void saveTwootCache() {
 
-		return null;
+		if (System.currentTimeMillis() - this.lastSave >= this.timeBewteenSaves) {
+			System.out.println("savingTwoot cache");
+			this.lastSave = System.currentTimeMillis();
+			synchronized (twootDB1Lock) {
+				this.lastSave = System.currentTimeMillis();
+
+				try (BufferedWriter write = new BufferedWriter(new FileWriter(twootDB1Path))) {
+					Set<Map.Entry<String, Twoot>> set = twootDB1Map.entrySet();
+					ArrayList<Map.Entry<String, Twoot>> arr = new ArrayList<>(set);
+
+					for (int i = 0; i < arr.size(); i++) {
+						write.write(new GsonBuilder().serializeNulls().create()
+								.toJson(arr.get(i).getValue(), Twoot.class));
+						write.newLine();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			this.lastSave = System.currentTimeMillis();
+			System.out.println("saved twoot cache");
+		}
 	}
 
 }

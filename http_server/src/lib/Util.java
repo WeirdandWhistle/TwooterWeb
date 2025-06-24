@@ -221,7 +221,7 @@ public abstract class Util implements FileRunnables {
 		if (e.getRequestMethod().equals(method)) {
 			return false;
 		}
-		HttpError("Wrong http method", 405, e);
+		HttpError("wrong http method", 405, e);
 		return true;
 	}
 	public static HashMap<String, String> parseQuery(String query) {

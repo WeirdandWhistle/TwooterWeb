@@ -38,7 +38,7 @@ public class Main {
 			});
 			server.createContext("/api/", api);
 			server.createContext("/slack/", new Slack());
-			server.createContext("/twooter", new Twooter());
+			server.createContext("/twooter", api.twooter);
 			server.createContext("/", new DefaultHandler());
 
 			server.start();
@@ -97,16 +97,18 @@ public class Main {
 
 		@Override
 		public void handle(HttpExchange exchange) throws IOException {
-			System.out.println("defalut:" + exchange.getRequestURI().toString());
+			// System.out.println("defalut:" +
+			// exchange.getRequestURI().toString());
+			String path = exchange.getRequestURI().getPath();
 
-			if (exchange.getRequestURI().toString().equals("/")) {
-				System.out.println("default");
+			if (path.equals("/")) {
+				// System.out.println("default");
 				new ServeFile("index.html").handle(exchange);
 
 				return;
 			}
 
-			if (exchange.getRequestURI().toString().split("/").length > 2
+			if (path.split("/").length > 2
 					&& exchange.getRequestURI().toString().split("/")[2].equals("DB")) {
 				String repo = "ERROR 401 not authorized\nfrom server";
 				exchange.sendResponseHeaders(401, repo.getBytes().length);
@@ -115,7 +117,7 @@ public class Main {
 				return;
 			}
 
-			File file = new File(exchange.getRequestURI().toString().replaceFirst("/", ""));
+			File file = new File(path.replaceFirst("/", ""));
 			if (file.exists()) {
 				// exchange.getResponseHeaders().add("Content-type",
 				// Util.getMIMIType(file.getName().split(".")[1]));

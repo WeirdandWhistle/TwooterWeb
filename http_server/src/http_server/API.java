@@ -10,13 +10,13 @@ import lib.Util;
 public class API implements HttpHandler {
 
 	private SlackBot slackBot = new SlackBot();
-	private Twooter twooter = new Twooter();
+	public Twooter twooter = new Twooter();
 
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
 		// System.out.println("ok good");
 
-		String[] url = exchange.getRequestURI().toString().split("/");
+		String[] url = exchange.getRequestURI().getPath().split("/");
 
 		System.out.println(url[2]);
 
